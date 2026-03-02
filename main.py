@@ -3,15 +3,16 @@ import os
 import pyttsx3
 import speech_recognition as sr
 import re
+import signal
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel,
     QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QScrollArea
 )
 from PyQt6.QtGui import QPixmap, QFont
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 
-from brain import get_response, stream_response, parse_response, prewarm_model
+from brain import get_response, stream_response, parse_response, prewarm_model, detect_emotion_from_user
 from memory import init_db, save_message, get_recent_history
 
 # Ensure asset paths work regardless of working directory
@@ -32,12 +33,24 @@ class ResponseWorker(QThread):
         self.history = history
 
     def run(self):
-        buffer = ""
-        for chunk in stream_response(self.user_input, self.history):
-            buffer += chunk
-            self.progress.emit(buffer)
-        response, emotion = parse_response(buffer)
-        self.finished.emit(self.user_input, response, emotion)
+        try:
+            buffer = ""
+            for chunk in stream_response(self.user_input, self.history):
+                if self.isInterruptionRequested():
+                    break
+                buffer += chunk
+                self.progress.emit(buffer)
+            if buffer:
+                response, emotion = parse_response(buffer)
+                study_words = [
+                    "study", "homework", "definition", "notes", "formula", "solve", "practice",
+                    "explain", "steps", "how", "why",
+                ]
+                is_study = any(w in (self.user_input or "").lower() for w in study_words)
+                emotion = "neutral" if is_study else detect_emotion_from_user(self.user_input)
+                self.finished.emit(self.user_input, response, emotion)
+        except KeyboardInterrupt:
+            pass
 
 
 class SpeakWorker(QThread):
@@ -64,6 +77,11 @@ class SpeakWorker(QThread):
             engine.stop()
         except Exception as e:
             print(f"[Speech Error] {e}")
+        except KeyboardInterrupt:
+            try:
+                engine.stop()
+            except Exception:
+                pass
 
 
 # ──────────────────────────────────────────────
@@ -253,7 +271,7 @@ class AIAssistant(QWidget):
         save_message("user", user_text)
 
         # Get conversation history
-        history = get_recent_history(4)
+        history = get_recent_history(2)
 
         # Start background worker
         self.worker = ResponseWorker(user_text, history)
@@ -379,6 +397,25 @@ if __name__ == "__main__":
     font = QFont("Segoe UI", 11)
     app.setFont(font)
 
+    def _sigint_handler(sig, frame):
+        try:
+            QApplication.instance().quit()
+        except Exception:
+            pass
+    try:
+        signal.signal(signal.SIGINT, _sigint_handler)
+    except Exception:
+        pass
+    t = QTimer()
+    t.start(250)
+    t.timeout.connect(lambda: None)
+
     window = AIAssistant()
     window.show()
-    sys.exit(app.exec())
+    try:
+        sys.exit(app.exec())
+    except KeyboardInterrupt:
+        try:
+            QApplication.instance().quit()
+        except Exception:
+            pass
