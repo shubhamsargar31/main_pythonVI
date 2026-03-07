@@ -102,14 +102,21 @@ class SpeakWorker(QThread):
                     winsound.PlaySound(temp_path, winsound.SND_FILENAME)
             else:
                 engine = pyttsx3.init()
-                engine.setProperty('rate', 165)
+                engine.setProperty('rate', 140)
                 engine.setProperty('volume', 1)
 
                 voices = engine.getProperty('voices')
-                if len(voices) > 1:
-                    engine.setProperty('voice', voices[1].id)  # female voice
-                else:
-                    engine.setProperty('voice', voices[0].id)
+                preferred_voice = None
+                for v in voices:
+                    name = (v.name or "").lower()
+                    vid = (v.id or "").lower()
+                    if "zira" in name or "female" in name or "woman" in name or "zira" in vid:
+                        preferred_voice = v.id
+                        break
+                if preferred_voice is None and voices:
+                    preferred_voice = voices[0].id
+                if preferred_voice:
+                    engine.setProperty('voice', preferred_voice)
 
                 engine.say(self.text)
                 engine.runAndWait()
@@ -248,6 +255,7 @@ class AIAssistant(QWidget):
         # Update Web UI
         clean_resp = response.replace('"', '\\"').replace('\n', '<br>')
         self.web_view.page().runJavaScript(f"updateResponse(\"{clean_resp}\")")
+        self.web_view.page().runJavaScript(f"updateEmotion('{final_emotion}')")
         # Emotion during speaking is handled by SpeakWorker signals
         self.web_view.page().runJavaScript("stopListening()")
         
@@ -294,7 +302,10 @@ class AIAssistant(QWidget):
             )
         )
         self.speak_worker.speaking_finished.connect(
-            lambda: self.web_view.page().runJavaScript("stopSpeaking()")
+            lambda: (
+                self.web_view.page().runJavaScript("stopSpeaking()"),
+                self.web_view.page().runJavaScript("updateEmotion('idle')")
+            )
         )
         # Do not force 'idle' after speaking; keep last emotion's GIF visible
         self.speak_worker.start()
