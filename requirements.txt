@@ -1,5 +1,28 @@
+# ─────────────────────────────────────────────────────────────
+# Project Dependencies (documented)
+# Note: Comments are allowed in requirements.txt and ignored by pip.
+# ─────────────────────────────────────────────────────────────
+
+# ML (short)
+# - LLM inference via local Ollama models (e.g., qwen/gemma) over HTTP
+# - STT uses Google SpeechRecognition (cloud ML)
+# - TTS uses Coqui neural models (runs on PyTorch internally)
+# - No training, inference-only in this project
+
+# Core UI stack (desktop app)
+PyQt6>=6.6.0                 # Qt widgets, signals/slots, core UI
+PyQt6-WebEngine>=6.6.0       # QWebEngineView for HTML/CSS/JS based UI
+
+# LLM client and utilities
+requests>=2.31.0             # HTTP client used to talk to local Ollama server
+
+# Speech: Text-to-Speech (TTS)
+pyttsx3>=2.90                # Offline TTS fallback (cross‑platform)
+TTS>=0.22.0                  # Coqui TTS (better natural voice, Windows plays via winsound)
+
+# Speech: Speech-to-Text (STT)
+SpeechRecognition>=3.10.0    # Microphone capture + Google recognizer binding
+PyAudio>=0.2.14              # PortAudio bindings required by SpeechRecognition (mic input)
 google-generativeai>=0.8.0
-PyQt6>=6.6.0
-pyttsx3>=2.90
-SpeechRecognition>=3.10.0
-PyAudio>=0.2.14
+# Optional / Experimental
+google-generativeai>=0.8.0   # Kept for Gemini experiments; not required when using Ollama

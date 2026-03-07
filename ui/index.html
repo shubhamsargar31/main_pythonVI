@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vi Companion</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Character Container -->
+        <div class="character-container">
+            <img id="character-img" src="../assets/Start/starting.png" alt="Vi">
+            <div class="output-bubble">
+                <div class="bubble-content">
+                    <svg class="bubble-icon" viewBox="0 0 24 24" aria-label="chat">
+                        <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-6 3V6a2 2 0 0 1 2-2z"></path>
+                    </svg>
+                    <div id="output-text" class="output-text">How can I assist you today?</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat History (Hidden but active) -->
+        <div id="chat-history"></div>
+
+        <!-- WhatsApp Style Glassmorphic Input Box -->
+        <div class="input-area">
+            <div class="glass-box">
+                <div class="bottom-row">
+                    <div class="input-wrapper">
+                        <input type="text" id="user-input" placeholder="Message Vi..." autocomplete="off">
+                    </div>
+                    <button id="send-btn" class="circle-btn primary">
+                        <svg viewBox="0 0 24 24" aria-label="send">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                        </svg>
+                    </button>
+                    <button id="mic-btn" class="circle-btn primary">
+                        <svg viewBox="0 0 24 24" aria-label="mic">
+                            <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zM11 18h2v2h3v2H8v-2h3v-2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Qt Bridge -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -3,14 +3,14 @@ import requests
 from config import OLLAMA_BASE_URL, MODEL_NAME, SYSTEM_PROMPT, SYSTEM_PROMPT_FAST, OLLAMA_OPTIONS, STOP_TOKENS, KEEP_ALIVE, FAST_MODE, FAST_OPTIONS
 from memory import get_recent_history
 
-VALID_EMOTIONS = {"happy", "sad", "neutral", "love"}
+VALID_EMOTIONS = {"happy", "sad", "neutral", "love", "talk", "question", "smile"}
 EMOTION_MAP = {
     "excited": "happy",
     "angry": "neutral",
     "frustrated": "neutral",
     "anxious": "neutral",
     "confused": "neutral",
-    "lonely": "love",
+    "lonely": "sad",
     "happy": "happy",
     "sad": "sad",
     "neutral": "neutral",
@@ -32,6 +32,13 @@ def parse_response(raw_text):
 
 def detect_emotion_from_user(user_text):
     txt = (user_text or "").lower()
+    # Question/ask detection (map to 'question' so UI shows explain GIF)
+    question_signals = [
+        "?", "what", "why", "how", "when", "where", "who", "which",
+        "काय", "का", "कधी", "कुठे", "कोण", "कसा", "कशी", "काय करु", "काय करू",
+    ]
+    if any(k in txt for k in question_signals):
+        return "question"
     pos = [
         "happy", "great", "awesome", "nice", "good", "thanks", "thank you", "love",
         "mast", "khush", "आनंदी", "खुश", "छान", "भारी",

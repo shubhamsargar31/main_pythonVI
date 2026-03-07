@@ -1,0 +1,295 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+    --brand-color: #00C2FF;
+    --brand-color-hover: #0098e6;
+    --bg-deep: #050a18;
+    --bg-mid: #081530;
+    --bg-soft: #0b1d3f;
+    --edge-tint: #0a2a4a;
+    --glow-cyan: #20D8FF;
+    --glow-blue: #60A5FA;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-deep);
+    background-image:
+        radial-gradient(1000px 620px at 50% 45%, var(--bg-soft) 0%, var(--bg-mid) 55%, var(--bg-deep) 100%),
+        linear-gradient(120deg, rgba(32, 216, 255, 0.06) 0%, rgba(96, 165, 250, 0.04) 35%, rgba(10, 16, 24, 0) 60%);
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.output-bubble {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1; /* behind image */
+    width: 0;   /* set via JS to match image */
+    height: 0;  /* set via JS to match image */
+    pointer-events: none;
+    opacity: 0; /* keep hidden behind image as requested */
+}
+
+.bubble-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28), inset 0 0 8px rgba(255,255,255,0.05);
+    width: 100%;
+    height: 100%;
+}
+
+.bubble-icon {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    fill: #bcd7ff;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+.output-text {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    line-height: 1.4;
+    overflow: auto;
+}
+
+/* Screen vignette for smoother edge blending */
+#app::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(closest-side at 50% 55%, rgba(8, 14, 32, 0) 55%, rgba(5, 12, 28, 0.6) 85%, rgba(5, 10, 24, 0.95) 100%);
+    z-index: 0;
+}
+
+/* Character Styling */
+.character-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    padding-top: 40px;
+    min-height: 72vh;
+}
+
+.character-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(84%, 860px);
+    height: min(62vh, 600px);
+    background: radial-gradient(ellipse at 50% 55%, rgba(10, 28, 64, 0.55) 0%, rgba(7, 20, 44, 0.75) 56%, rgba(5, 10, 24, 0) 100%);
+    filter: blur(22px);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.character-container::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(70%, 700px);
+    height: min(52vh, 520px);
+    background: radial-gradient(ellipse at 50% 60%, rgba(32, 216, 255, 0.10) 0%, rgba(96, 165, 250, 0.08) 50%, rgba(0, 194, 255, 0) 80%);
+    filter: blur(12px);
+    z-index: 0;
+    pointer-events: none;
+}
+
+#character-img {
+    width: 100%;
+    height: 100%;
+    max-height: 78vh;
+    object-fit: cover;
+    object-position: 50% 20%;
+    filter: blur(12px) drop-shadow(0 0 18px rgba(0, 150, 255, 0.18));
+    opacity: 0;
+    transform: scale(1.02);
+    position: relative;
+    z-index: 2; /* image above bubble */
+    --mask-inner: 62%;
+    --mask-outer: 88%;
+    -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) var(--mask-inner), rgba(0,0,0,0.3) var(--mask-outer), rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) var(--mask-inner), rgba(0,0,0,0.3) var(--mask-outer), rgba(0,0,0,0) 100%);
+    image-rendering: auto;
+    backface-visibility: hidden;
+    will-change: filter, transform;
+}
+
+@keyframes revealBlur {
+    0%   { filter: blur(12px) drop-shadow(0 0 18px rgba(0, 150, 255, 0.18)); opacity: 0; transform: scale(1.02); }
+    100% { filter: blur(0) drop-shadow(0 0 18px rgba(0, 150, 255, 0.18)); opacity: 1; transform: scale(1); }
+}
+
+.reveal {
+    animation: revealBlur 1600ms ease-out forwards;
+}
+/* Input Area Styling (WhatsApp + Glassmorphism) */
+ 
+/* Input Area Styling (WhatsApp + Glassmorphism) */
+.input-area {
+    width: 100%;
+    max-width: 640px;
+    padding: 0 20px 40px 20px;
+    z-index: 10;
+}
+
+.glass-box {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    padding: 15px 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.top-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
+.chat-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.8;
+}
+
+.status-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    margin-left: 12px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+.bottom-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.circle-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 0 8px rgba(255,255,255,0.06);
+}
+
+.circle-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35), inset 0 0 10px rgba(255,255,255,0.08);
+}
+
+.circle-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.circle-btn img {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+}
+
+.circle-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: #ffffff;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+}
+
+.circle-btn.primary {
+    background: linear-gradient(135deg, #00C2FF 0%, #3B82F6 100%);
+    border-color: rgba(0, 194, 255, 0.35);
+    box-shadow: 0 6px 18px rgba(0,194,255,0.28), inset 0 0 8px rgba(255,255,255,0.08);
+}
+
+.circle-btn.primary:hover {
+    background: linear-gradient(135deg, #20D8FF 0%, #60A5FA 100%);
+    box-shadow: 0 8px 22px rgba(0,194,255,0.36), inset 0 0 10px rgba(255,255,255,0.1);
+}
+
+.listening #mic-btn {
+    background: linear-gradient(135deg, #ea4335 0%, #c62828 100%);
+    box-shadow: 0 6px 18px rgba(234,67,53,0.32);
+    animation: pulse 1.5s infinite;
+}
+
+.input-wrapper {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    padding: 6px 12px;
+}
+
+#user-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 15px;
+    padding: 6px 0;
+}
+
+#user-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+.listening #mic-btn {
+    background: #ea4335;
+    animation: pulse 1.5s infinite;
+}
