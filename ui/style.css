@@ -41,11 +41,17 @@ body, html {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1; /* behind image */
+    z-index: 1;
     width: 0;   /* set via JS to match image */
     height: 0;  /* set via JS to match image */
     pointer-events: none;
-    opacity: 0; /* keep hidden behind image as requested */
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+body.speaking .output-bubble {
+    opacity: 1;
+    z-index: 3;
 }
 
 .bubble-content {

@@ -288,7 +288,13 @@ class AIAssistant(QWidget):
     def speak(self, text, emotion="talk"):
         self.speak_worker = SpeakWorker(text)
         self.speak_worker.speaking_started.connect(
-            lambda: self.web_view.page().runJavaScript(f"updateEmotion('{emotion}')")
+            lambda: (
+                self.web_view.page().runJavaScript(f"updateEmotion('{emotion}')"),
+                self.web_view.page().runJavaScript("startSpeaking()"),
+            )
+        )
+        self.speak_worker.speaking_finished.connect(
+            lambda: self.web_view.page().runJavaScript("stopSpeaking()")
         )
         # Do not force 'idle' after speaking; keep last emotion's GIF visible
         self.speak_worker.start()

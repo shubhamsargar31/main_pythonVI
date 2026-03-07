@@ -122,7 +122,17 @@ function stopListening() {
     document.body.classList.remove('listening');
 }
 
+function startSpeaking() {
+    document.body.classList.add('speaking');
+}
+
+function stopSpeaking() {
+    document.body.classList.remove('speaking');
+}
+
 // Expose functions to Python
 window.updateResponse = updateResponse;
 window.updateEmotion = updateEmotion;
 window.stopListening = stopListening;
+window.startSpeaking = startSpeaking;
+window.stopSpeaking = stopSpeaking;
