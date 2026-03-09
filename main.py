@@ -4,10 +4,11 @@ import pyttsx3
 import speech_recognition as sr
 import re
 import signal
+import json
 import winsound  # For playing Coqui TTS output on Windows
 
 try:
-    from TTS.api import TTS
+    from TTS.api import TTS  
     COQUI_AVAILABLE = True
     # Global model instance to avoid reloading
     COQUI_MODEL = None
@@ -209,13 +210,17 @@ class AIAssistant(QWidget):
 
         self._prewarm()
         self._center_and_resize()
+        try:
+            self.web_view.loadFinished.connect(lambda _: self._push_start_gifs())
+        except Exception:
+            pass
 
     def _center_and_resize(self):
         screen = QGuiApplication.primaryScreen()
         if screen is not None:
             geo = screen.availableGeometry()
-            w = min(780, int(geo.width() * 0.45))
-            h = min(900, int(geo.height() * 0.2))
+            w = min(450, int(geo.width() * 0.45))
+            h = min(900, int(geo.height() * 0.78))
             self.resize(w, h)
             fg = self.frameGeometry()
             fg.moveCenter(geo.center())
@@ -225,6 +230,22 @@ class AIAssistant(QWidget):
         """Warm up the model in a background thread."""
         self.prewarm_worker = PrewarmWorker()
         self.prewarm_worker.start()
+
+    def _push_start_gifs(self):
+        try:
+            start_dir = os.path.join(BASE_DIR, "assets", "Start")
+            files = []
+            if os.path.isdir(start_dir):
+                for name in os.listdir(start_dir):
+                    if name.lower().endswith(".gif"):
+                        files.append(f"../assets/Start/{name}")
+            # stable order but JS will randomize
+            files.sort()
+            import json as _json
+            js = f"window.START_GIFS = {_json.dumps(files)};"
+            self.web_view.page().runJavaScript(js)
+        except Exception:
+            pass
 
     def process_text_from_web(self, text):
         self._last_user = text
@@ -255,7 +276,6 @@ class AIAssistant(QWidget):
         # Update Web UI
         clean_resp = response.replace('"', '\\"').replace('\n', '<br>')
         self.web_view.page().runJavaScript(f"updateResponse(\"{clean_resp}\")")
-        self.web_view.page().runJavaScript(f"updateEmotion('{final_emotion}')")
         # Emotion during speaking is handled by SpeakWorker signals
         self.web_view.page().runJavaScript("stopListening()")
         
@@ -271,18 +291,29 @@ class AIAssistant(QWidget):
             
             def run(self_inner):
                 import speech_recognition as sr
-                recognizer = sr.Recognizer()
+                recognizer = self.recognizer
                 with sr.Microphone() as source:
                     try:
-                        audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
+                        recognizer.adjust_for_ambient_noise(source, duration=0.6)
+                        audio = recognizer.listen(source, timeout=6, phrase_time_limit=12)
                         text = recognizer.recognize_google(audio)
-                        self_inner.text_received.emit(text)
+                        self_inner.text_received.emit(text or "")
                     except Exception as e:
                         self_inner.error_occurred.emit(str(e))
 
         self.voice_worker = VoiceWorker()
-        self.voice_worker.text_received.connect(self.process_text_from_web)
-        self.voice_worker.error_occurred.connect(lambda: self.web_view.page().runJavaScript("stopListening()"))
+        self.voice_worker.text_received.connect(
+            lambda t: (
+                self.web_view.page().runJavaScript("stopListening()"),
+                self.web_view.page().runJavaScript(f"setInputAndSend({json.dumps(t)})")
+            ) if t.strip() else self.web_view.page().runJavaScript("updateResponse(\"Voice input ऐकू आलं नाही. पुन्हा try करा.\")")
+        )
+        self.voice_worker.error_occurred.connect(
+            lambda e: (
+                self.web_view.page().runJavaScript("stopListening()"),
+                self.web_view.page().runJavaScript("updateResponse(\"Mic error आला. कृपया microphone access तपासा.\")"),
+            )
+        )
         self.voice_worker.start()
 
     # 🗑 Clear Conversation Memory
@@ -304,7 +335,7 @@ class AIAssistant(QWidget):
         self.speak_worker.speaking_finished.connect(
             lambda: (
                 self.web_view.page().runJavaScript("stopSpeaking()"),
-                self.web_view.page().runJavaScript("updateEmotion('idle')")
+                self.web_view.page().runJavaScript("updateEmotion('idle')"),
             )
         )
         # Do not force 'idle' after speaking; keep last emotion's GIF visible
